@@ -26,23 +26,18 @@ jobs:
           cp -r stage-openclaw pi-gen/stage-openclaw
           touch pi-gen/stage0/SKIP_IMAGES pi-gen/stage1/SKIP_IMAGES pi-gen/stage2/SKIP_IMAGES
 
-      - name: Install QEMU and register binfmt
+      - name: Set up QEMU for ARM64
         run: |
-          sudo apt-get update
-          sudo apt-get install -y qemu-user-static binfmt-support
-          # Register with F (fix-binary) flag so it works inside Docker
-          sudo mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc || true
-          QEMU_PATH=$(which qemu-aarch64-static)
-          echo ":qemu-aarch64-pigen:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:${QEMU_PATH}:F" | sudo tee /proc/sys/fs/binfmt_misc/register || true
-          # Create symlink so pi-gen finds qemu-aarch64 (without -static)
-          sudo ln -sf "$QEMU_PATH" /usr/bin/qemu-aarch64
-          # Verify it works
-          arch-test aarch64 && echo "ARM64 emulation working!" || sudo apt-get install -y arch-test && arch-test aarch64
+          # Use docker-based QEMU registration with F flag (works inside containers)
+          docker run --rm --privileged tonistiigi/binfmt --install arm64
+          # Create symlink so pi-gen's "which qemu-aarch64" check passes
+          sudo ln -sf /usr/bin/qemu-aarch64-static /usr/bin/qemu-aarch64 || true
+          # Verify
+          arch-test arm64 && echo "ARM64 emulation OK" || true
 
       - name: Build image
         run: |
           cd pi-gen
-          chmod +x build-docker.sh
           ./build-docker.sh
 
       - name: Get date

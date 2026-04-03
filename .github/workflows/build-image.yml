@@ -1,0 +1,59 @@
+name: Build PiClaw Image
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  schedule:
+    - cron: '0 4 1 * *'  # Monthly on the 1st at 4am UTC
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
+      - name: Checkout PiClaw
+        uses: actions/checkout@v4
+
+      - name: Clone pi-gen
+        run: git clone --depth 1 https://github.com/RPi-Distro/pi-gen.git
+
+      - name: Configure build
+        run: |
+          cp config pi-gen/config
+          cp -r stage-openclaw pi-gen/stage-openclaw
+
+      - name: Build image
+        run: |
+          cd pi-gen
+          ./build-docker.sh
+
+      - name: Get date
+        id: date
+        run: echo "date=$(date +%Y%m%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: piclaw-${{ steps.date.outputs.date }}
+          path: pi-gen/deploy/*.img.xz
+          retention-days: 30
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: pi-gen/deploy/*.img.xz
+          generate_release_notes: true

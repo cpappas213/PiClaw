@@ -1,0 +1,15 @@
+[Unit]
+Description=PiClaw First Boot Setup
+After=multi-user.target
+ConditionPathExists=!/home/pi/.openclaw-configured
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/first-boot.sh
+StandardOutput=tty
+StandardInput=tty
+TTYPath=/dev/tty1
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

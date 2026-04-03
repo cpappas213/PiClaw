@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:docs.openclaw.ai)",
+      "WebFetch(domain:openclawai.io)",
+      "Bash(chmod +x /Users/chris/PiClaw/build.sh /Users/chris/PiClaw/stage-openclaw/01-install-node/00-run-chroot.sh /Users/chris/PiClaw/stage-openclaw/02-install-openclaw/00-run-chroot.sh /Users/chris/PiClaw/stage-openclaw/03-configure/00-run.sh /Users/chris/PiClaw/stage-openclaw/03-configure/01-run-chroot.sh /Users/chris/PiClaw/stage-openclaw/03-configure/files/first-boot.sh)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

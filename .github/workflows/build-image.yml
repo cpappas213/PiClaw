@@ -42,7 +42,7 @@ jobs:
           locale: en_US.UTF-8
           keyboard-keymap: us
           keyboard-layout: English (US)
-          timezone: UTC
+          timezone: Etc/UTC
 
       - name: Get date
         id: date

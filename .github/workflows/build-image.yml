@@ -34,11 +34,14 @@ jobs:
         run: |
           cp config pi-gen/config
           cp -r stage-openclaw pi-gen/stage-openclaw
+          # Only produce an image for the final stage
+          touch pi-gen/stage0/SKIP_IMAGES pi-gen/stage1/SKIP_IMAGES pi-gen/stage2/SKIP_IMAGES
 
       - name: Build image
         run: |
           cd pi-gen
-          ./build-docker.sh
+          chmod +x build-docker.sh
+          PRESERVE_CONTAINER=1 ./build-docker.sh
 
       - name: Get date
         id: date

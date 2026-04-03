@@ -27,6 +27,9 @@ jobs:
       - name: Checkout PiClaw
         uses: actions/checkout@v4
 
+      - name: Set up QEMU for ARM emulation
+        uses: docker/setup-qemu-action@v3
+
       - name: Clone pi-gen
         run: git clone --depth 1 https://github.com/RPi-Distro/pi-gen.git
 

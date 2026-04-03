@@ -17,28 +17,33 @@ jobs:
       - name: Checkout PiClaw
         uses: actions/checkout@v4
 
-      - name: Set up QEMU for ARM64 emulation
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
+      - name: Clone pi-gen
+        run: git clone --depth 1 --branch arm64 https://github.com/RPi-Distro/pi-gen.git
+
+      - name: Configure build
+        run: |
+          cp config pi-gen/config
+          cp -r stage-openclaw pi-gen/stage-openclaw
+          touch pi-gen/stage0/SKIP_IMAGES pi-gen/stage1/SKIP_IMAGES pi-gen/stage2/SKIP_IMAGES
+
+      - name: Install QEMU and register binfmt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-user-static binfmt-support
+          # Register with F (fix-binary) flag so it works inside Docker
+          sudo mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc || true
+          QEMU_PATH=$(which qemu-aarch64-static)
+          echo ":qemu-aarch64-pigen:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\xb7\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:${QEMU_PATH}:F" | sudo tee /proc/sys/fs/binfmt_misc/register || true
+          # Create symlink so pi-gen finds qemu-aarch64 (without -static)
+          sudo ln -sf "$QEMU_PATH" /usr/bin/qemu-aarch64
+          # Verify it works
+          arch-test aarch64 && echo "ARM64 emulation working!" || sudo apt-get install -y arch-test && arch-test aarch64
 
       - name: Build image
-        uses: usimd/pi-gen-action@v1
-        id: build
-        with:
-          image-name: PiClaw
-          pi-gen-version: arm64
-          hostname: piclaw
-          username: pi
-          password: piclaw
-          enable-ssh: 1
-          stage-list: stage0 stage1 stage2 ./stage-openclaw
-          compression: xz
-          locale: en_US.UTF-8
-          keyboard-keymap: us
-          keyboard-layout: English (US)
-          timezone: Etc/UTC
-          verbose-output: true
+        run: |
+          cd pi-gen
+          chmod +x build-docker.sh
+          ./build-docker.sh
 
       - name: Get date
         id: date
@@ -48,12 +53,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: piclaw-${{ steps.date.outputs.date }}
-          path: ${{ steps.build.outputs.image-path }}
+          path: pi-gen/deploy/*.img.xz
           retention-days: 30
 
       - name: Create release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ steps.build.outputs.image-path }}
+          files: pi-gen/deploy/*.img.xz
           generate_release_notes: true

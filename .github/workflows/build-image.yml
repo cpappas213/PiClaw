@@ -28,12 +28,11 @@ jobs:
 
       - name: Set up QEMU for ARM64
         run: |
-          # Use docker-based QEMU registration with F flag (works inside containers)
+          # Install host QEMU binary (so pi-gen's "which qemu-aarch64" passes)
+          sudo apt-get update && sudo apt-get install -y qemu-user-static
+          sudo ln -sf /usr/bin/qemu-aarch64-static /usr/bin/qemu-aarch64
+          # Re-register with F flag (fix-binary) so it works inside Docker containers
           docker run --rm --privileged tonistiigi/binfmt --install arm64
-          # Create symlink so pi-gen's "which qemu-aarch64" check passes
-          sudo ln -sf /usr/bin/qemu-aarch64-static /usr/bin/qemu-aarch64 || true
-          # Verify
-          arch-test arm64 && echo "ARM64 emulation OK" || true
 
       - name: Build image
         run: |

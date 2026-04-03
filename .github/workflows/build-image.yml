@@ -43,6 +43,7 @@ jobs:
           keyboard-keymap: us
           keyboard-layout: English (US)
           timezone: Etc/UTC
+          verbose-output: true
 
       - name: Get date
         id: date

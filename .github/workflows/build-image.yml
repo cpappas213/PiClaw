@@ -27,24 +27,22 @@ jobs:
       - name: Checkout PiClaw
         uses: actions/checkout@v4
 
-      - name: Set up QEMU for ARM emulation
-        uses: docker/setup-qemu-action@v3
-
-      - name: Clone pi-gen
-        run: git clone --depth 1 https://github.com/RPi-Distro/pi-gen.git
-
-      - name: Configure build
-        run: |
-          cp config pi-gen/config
-          cp -r stage-openclaw pi-gen/stage-openclaw
-          # Only produce an image for the final stage
-          touch pi-gen/stage0/SKIP_IMAGES pi-gen/stage1/SKIP_IMAGES pi-gen/stage2/SKIP_IMAGES
-
       - name: Build image
-        run: |
-          cd pi-gen
-          chmod +x build-docker.sh
-          PRESERVE_CONTAINER=1 ./build-docker.sh
+        uses: usimd/pi-gen-action@v1
+        id: build
+        with:
+          image-name: PiClaw
+          pi-gen-version: arm64
+          hostname: piclaw
+          username: pi
+          password: piclaw
+          enable-ssh: 1
+          stage-list: stage0 stage1 stage2 ./stage-openclaw
+          compression: xz
+          locale: en_US.UTF-8
+          keyboard-keymap: us
+          keyboard-layout: English (US)
+          timezone: UTC
 
       - name: Get date
         id: date
@@ -54,12 +52,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: piclaw-${{ steps.date.outputs.date }}
-          path: pi-gen/deploy/*.img.xz
+          path: ${{ steps.build.outputs.image-path }}
           retention-days: 30
 
       - name: Create release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: pi-gen/deploy/*.img.xz
+          files: ${{ steps.build.outputs.image-path }}
           generate_release_notes: true

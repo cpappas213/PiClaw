@@ -50,7 +50,22 @@ jobs:
           path: pi-gen/deploy/*.img.xz
           retention-days: 30
 
-      - name: Create release
+      - name: Update latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Delete existing 'latest' release if it exists
+          gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+          # Create new 'latest' release
+          gh release create latest \
+            --title "Latest PiClaw Image" \
+            --notes "Built on $(date -u +%Y-%m-%d) from commit $(git rev-parse --short HEAD).
+
+          Flash this image to an SD card or USB SSD, boot your Raspberry Pi, and run \`openclaw onboard --install-daemon\` to get started." \
+            --latest \
+            pi-gen/deploy/*.img.xz
+
+      - name: Create versioned release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
